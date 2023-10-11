@@ -59,6 +59,7 @@ public:
 			 std::vector<cv::Mat> &out_img) override;
 private:
     std::vector<float> m_moving_average;///< moving average.
+    int m_latency = 0;
 };
 
 /**

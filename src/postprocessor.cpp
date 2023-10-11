@@ -50,9 +50,10 @@ namespace gf {
         std::stringstream text;
         text << Config::POST_TEXT << ": " << 100 * sum << "%";
         std::cout<<text.str()<<std::endl;
+		if(sum>Config::THRESHOLD)m_latency = 8;
         for (int i = 0; i < img.size(); ++i) {
             ///@note the putText method does not have GPU version since it quite slow running on GPU for per pixel ops.
-            if (sum>=Config::THRESHOLD){
+            if (sum>=Config::THRESHOLD||m_latency){
                 for (int j = 0; j < Config::SAMPLE_INTERVAL; ++j) {
                     cv::putText(out_img[i*Config::SAMPLE_INTERVAL+j], text.str(),
                                 cv::Point(Config::TEXT_OFF_X, Config::TEXT_OFF_Y),
@@ -60,6 +61,7 @@ namespace gf {
                                 cv::Scalar(Config::TEXT_COLOR[0], Config::TEXT_COLOR[1], Config::TEXT_COLOR[2]),
                                 (int) Config::TEXT_LINE_WIDTH);
                 }
+				m_latency--;
             }
             for (int j = 0; j < Config::SAMPLE_INTERVAL; ++j) {
                 auto b = boxes[i];
