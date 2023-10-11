@@ -1,0 +1,10 @@
+#pragma once
+
+#cmakedefine PREPROCESS_GPU
+
+#cmakedefine MODEL_INPUT_NAME "@MODEL_INPUT_NAME@"
+
+#cmakedefine MODEL_OUTPUT_NAMES "@MODEL_OUTPUT_NAMES@"
+
+#cmakedefine DEPLOY_MODEL "@DEPLOY_MODEL@"
+
