@@ -36,7 +36,7 @@ POSTPROCESS:
   BOX_LINE_WIDTH: 1.0 # should be in float
   TEXT_FONT_SIZE: 1.8 # should be in float
   TEXT_OFF_X: 450 # If negative, we place the x offset to middle of image.
-  TEXT_OFF_Y: 50
+  TEXT_OFF_Y: 100
   POSTPROCESS_NAME: "SmokeDeployPost"
   POST_TEXT: "Smoke" #output string literal.
   DET_SCORE: "score"

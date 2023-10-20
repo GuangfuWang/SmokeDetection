@@ -84,7 +84,7 @@ public:
 	 * @param out_img output images.
 	 */
 	void Postprocessing(const SharedRef<TrtResults> &res, const std::vector<cv::Mat> &img,
-						std::vector<cv::Mat> &out_img);
+						std::vector<cv::Mat> &out_img,int& alarm);
 
 protected:
 	/**

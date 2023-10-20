@@ -7,7 +7,7 @@ namespace gf {
     thread_local bool Postprocessor::INIT_FLAG = false;
 
     void SmokeDeployPost::Run(const SharedRef<TrtResults> &res, const std::vector<cv::Mat> &img,
-                                   std::vector<cv::Mat> &out_img) {
+                                   std::vector<cv::Mat> &out_img,int& alarm) {
         //our simple program will only draw letters on top of images.
         auto flag = static_cast<PostProcessFlag>(Config::POST_MODE);
         assert(flag == PostProcessFlag::DRAW_BOX_LETTER);
@@ -62,7 +62,8 @@ namespace gf {
                                 (int) Config::TEXT_LINE_WIDTH);
                 }
 				m_latency--;
-            }
+				alarm = 1;
+            }else alarm = 0;
             for (int j = 0; j < Config::SAMPLE_INTERVAL; ++j) {
                 auto b = boxes[i];
                 for (int k = 0; k < b.size(); ++k) {
@@ -84,12 +85,12 @@ namespace gf {
     }
 
     void Postprocessor::Run(const SharedRef<TrtResults> &res, const std::vector<cv::Mat> &img,
-                            std::vector<cv::Mat> &out_img) {
+                            std::vector<cv::Mat> &out_img,int& alarm) {
         if (!INIT_FLAG) {
             Init();
             INIT_FLAG = true;
         }
-        m_worker->Run(res, img, out_img);
+        m_worker->Run(res, img, out_img,alarm);
     }
 
     Postprocessor::~Postprocessor() {

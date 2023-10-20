@@ -6,5 +6,5 @@
 
 #define MODEL_OUTPUT_NAMES "scores"
 
-#define DEPLOY_MODEL "../models/smoke.engine"
+#define DEPLOY_MODEL "../models/fight_pptsm.engine"
 

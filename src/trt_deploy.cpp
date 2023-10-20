@@ -234,8 +234,8 @@ namespace gf {
     }
 
     void TrtDeploy::Postprocessing(const SharedRef<TrtResults> &res, const std::vector<cv::Mat> &img,
-                                   std::vector<cv::Mat> &out_img) {
-        m_postprocessor->Run(res, img, out_img);
+                                   std::vector<cv::Mat> &out_img,int& alarm) {
+        m_postprocessor->Run(res, img, out_img,alarm);
     }
 
 }

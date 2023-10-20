@@ -44,7 +44,7 @@ public:
 	 */
 	virtual void Run(const SharedRef<TrtResults> &res,
 					 const std::vector<cv::Mat> &img,
-					 std::vector<cv::Mat> &out_img) = 0;
+					 std::vector<cv::Mat> &out_img,int& alarm) = 0;
 };
 
 /**
@@ -56,7 +56,7 @@ class SmokeDeployPost final: public PostprocessorOps
 {
 public:
 	void Run(const SharedRef<TrtResults> &res, const std::vector<cv::Mat> &img,
-			 std::vector<cv::Mat> &out_img) override;
+			 std::vector<cv::Mat> &out_img,int& alarm) override;
 private:
     std::vector<float> m_moving_average;///< moving average.
     int m_latency = 0;
@@ -82,7 +82,7 @@ public:
 	 */
 	void Run(const SharedRef<TrtResults> &res,
 					 const std::vector<cv::Mat> &img,
-					 std::vector<cv::Mat> &out_img);
+					 std::vector<cv::Mat> &out_img,int& alarm);
 	/**
 	 * @brief initialization of this class, mainly to register the used worker class.
 	 */
