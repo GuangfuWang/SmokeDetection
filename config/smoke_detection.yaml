@@ -1,8 +1,8 @@
 MODEL:
-  MODEL_NAME: "../models/smoke.engine"
+  MODEL_NAME: "../models/smoke-trt.engine"
   BACKBONE: "ResNet50"
   INPUT_NAME: ["im_shape","image","scale_factor"]
-  OUTPUT_NAMES: [ "dets","num_dets" ]
+  OUTPUT_NAMES: [ "multiclass_nms3_0.tmp_0","multiclass_nms3_0.tmp_2" ]
 
 DATA:
   VIDEO_NAME: "/home/wgf/Downloads/smoke.mp4"
@@ -16,7 +16,7 @@ PIPELINE:
   TRIGGER_LEN: 1 # trigger a detection
   BATCH_SIZE: 1 # for now only 1 is supported. for video input [B,N,C,H,W] e.g. [1,8,3,320,320]
   THRESHOLD: 0.8
-  SCORE_THRESHOLD: 0.6
+  SCORE_THRESHOLD: 0.8
   TARGET_CLASS: 1 # task dependent. for smoke task, 0--no smoke, 1--smoke.
   ENABLE_SCALE: True
   KEEP_RATIO: True
@@ -29,17 +29,20 @@ PIPELINE:
   TIMING: True
 
 POSTPROCESS:
-  POST_MODE: 2 # Current 4 types of mode are supported: DRAW_LETTER = 0, DRAW_BOX = 1, DRAW_BOX_LETTER = 2,MASK_OUT = 3
+  POST_MODE: 2 # Current 5 types of mode are supported: DRAW_LETTER = 0, DRAW_BOX = 1, DRAW_BOX_LETTER = 2,MASK_OUT = 3,NON=4
   TEXT_COLOR: [255,0,0] # should be in BGR and value between [0-255]
   BOX_COLOR: [255,0,0] # should be in BGR and value between [0-255]
+  ALARM_TEXT_COLOR: [255,0,0]
+  ALARM_BOX_COLOR: [255,0,0]
   TEXT_LINE_WIDTH: 2.0 # should be in float
   BOX_LINE_WIDTH: 1.0 # should be in float
-  TEXT_FONT_SIZE: 1.8 # should be in float
+  TEXT_FONT_SIZE: 30 # should be in float
   TEXT_OFF_X: 450 # If negative, we place the x offset to middle of image.
   TEXT_OFF_Y: 100
   POSTPROCESS_NAME: "SmokeDeployPost"
-  POST_TEXT: "Smoke" #output string literal.
+  POST_TEXT: "吸烟" #output string literal.
   DET_SCORE: "score"
   DET_CLASS_ID: "class_id"
   DET_COORD: "bbox"
   DET_NUM_BBOX: "num_bbox"
+  POST_TEXT_FONT_FILE: "/home/wgf/dev/helmet_detection/SIMSUN.ttf"

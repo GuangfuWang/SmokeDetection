@@ -86,7 +86,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE FILE FILES "/home/wgf/dev/smoke_detection/src/model.h")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/smoke_detection" TYPE FILE FILES "/home/wgf/dev/smoke_detection/src/model.h")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT)

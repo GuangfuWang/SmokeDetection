@@ -1,18 +1,21 @@
 #pragma once
 
 #include <opencv2/core/mat.hpp>
+#include <opencv2/freetype.hpp>
 #include <vector>
 #include "trt_deployresult.h"
 #include "util.h"
 
-namespace gf
+namespace smoke
 {
 
-typedef struct {
+typedef struct
+{
 	int class_id;
 	float score;
-	int x_min,y_min,x_max,y_max;
+	int x_min, y_min, x_max, y_max;
 } Box;
+
 /**
  * @brief This is a base class for real post processing.
  * @details This class should be implemented given the main function and the post processing purposes.
@@ -22,6 +25,14 @@ typedef struct {
 class PostprocessorOps
 {
 public:
+	explicit PostprocessorOps(SharedRef<Config> &config)
+	{
+		m_config = config;
+		m_font = cv::freetype::createFreeType2();
+		if (!Util::checkFileExist(config->POST_TEXT_FONT_FILE))
+			std::cerr << "Font file not found!" << std::endl;
+		else m_font->loadFontData(config->POST_TEXT_FONT_FILE, 0);
+	};
 	/**
 	 * @brief virtual de-constructor for avoiding memory leaking.
 	 */
@@ -33,6 +44,7 @@ public:
 		DRAW_BOX = 1, ///< indicate only draw box into image as inference results.
 		DRAW_BOX_LETTER = 2, ///< indicate draw both text and box as inference results.
 		MASK_OUT = 3, ///< indicate mask out the box area.
+		NON = 4,
 	};
 
 public:
@@ -44,7 +56,10 @@ public:
 	 */
 	virtual void Run(const SharedRef<TrtResults> &res,
 					 const std::vector<cv::Mat> &img,
-					 std::vector<cv::Mat> &out_img,int& alarm) = 0;
+					 std::vector<cv::Mat> &out_img, int &alarm) = 0;
+protected:
+	SharedRef<Config> m_config = nullptr;
+	cv::Ptr<cv::freetype::FreeType2> m_font = nullptr;
 };
 
 /**
@@ -55,11 +70,14 @@ public:
 class SmokeDeployPost final: public PostprocessorOps
 {
 public:
+	explicit SmokeDeployPost(SharedRef<Config> &config)
+		: PostprocessorOps(config)
+	{};
 	void Run(const SharedRef<TrtResults> &res, const std::vector<cv::Mat> &img,
-			 std::vector<cv::Mat> &out_img,int& alarm) override;
+			 std::vector<cv::Mat> &out_img, int &alarm) override;
 private:
-    std::vector<float> m_moving_average;///< moving average.
-    int m_latency = 0;
+	std::vector<float> m_moving_average;///< moving average.
+	int m_latency = 0;
 };
 
 /**
@@ -69,6 +87,8 @@ private:
 class Postprocessor final
 {
 public:
+	explicit Postprocessor(SharedRef<Config> &config)
+	{ m_config = config; }
 	/**
  	* @brief de-constructor.
  	*/
@@ -81,16 +101,17 @@ public:
 	 * @note the work is done using CPU computation, not GPU.
 	 */
 	void Run(const SharedRef<TrtResults> &res,
-					 const std::vector<cv::Mat> &img,
-					 std::vector<cv::Mat> &out_img,int& alarm);
+			 const std::vector<cv::Mat> &img,
+			 std::vector<cv::Mat> &out_img, int &alarm);
 	/**
 	 * @brief initialization of this class, mainly to register the used worker class.
 	 */
 	void Init();
 
 private:
-	SharedRef<Factory<PostprocessorOps>> m_ops = nullptr;///< auto deconstructed, lazy purpose.
-	PostprocessorOps* m_worker = nullptr;///< real worker.
-	static thread_local bool INIT_FLAG; ///< initialization flag.
+//	SharedRef<Factory<PostprocessorOps>> m_ops = nullptr;///< auto deconstructed, lazy purpose.
+	PostprocessorOps *m_worker = nullptr;///< real worker.
+	bool INIT_FLAG = false; ///< initialization flag.
+	SharedRef<Config> m_config = nullptr;
 };
 }

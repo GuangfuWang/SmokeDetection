@@ -8,7 +8,7 @@
 #include "trt_deployresult.h"
 #include "util.h"
 
-namespace gf
+namespace smoke
 {
 /**
  * @brief this is a helper class for logging.
@@ -38,7 +38,7 @@ public:
 	 * @brief constructor for deploy class.
 	 * @details this construction will not init all materials.
 	 */
-	TrtDeploy();
+	explicit TrtDeploy(SharedRef<Config>& config);
 
 	/**
 	 * @brief virtual de-constructor to avoid memory leaking.
@@ -135,6 +135,7 @@ protected:
 	CudaMemAllocStatus m_cuda_alloc_status; ///< allocation of memory for cuda.
 
 	float m_curr_fps; ///< Frame per Second.
+	SharedRef<Config> m_config = nullptr;
 };
 
 }

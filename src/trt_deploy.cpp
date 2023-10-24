@@ -6,7 +6,7 @@
 #include "trt_deploy.h"
 #include "util.h"
 
-namespace gf {
+namespace smoke {
 
     void Logger::log(nvinfer1::ILogger::Severity severity, const char *msg) noexcept {
         if (severity != Severity::kINFO) {
@@ -16,7 +16,8 @@ namespace gf {
 
     thread_local bool TrtDeploy::INIT_FLAG = false;
 
-    TrtDeploy::TrtDeploy() {
+    TrtDeploy::TrtDeploy(SharedRef<Config>& config) {
+		m_config = config;
         m_model_load_status = ModelLoadStatus::NON_LOADED;
         m_cuda_alloc_status = CudaMemAllocStatus::NON_ALLOC;
         m_curr_fps = 0.0f;
@@ -24,7 +25,7 @@ namespace gf {
 
     TrtDeploy::~TrtDeploy() {
         cudaStreamSynchronize(m_stream);
-        for (int i = 0; i < Config::OUTPUT_NAMES.size()+Config::INPUT_NAME.size(); ++i) {
+        for (int i = 0; i < m_config->OUTPUT_NAMES.size()+m_config->INPUT_NAME.size(); ++i) {
             cudaFree(m_device_ptr[i]);
         }
         cudaStreamDestroy(m_stream);
@@ -45,23 +46,13 @@ namespace gf {
     }
 
     void TrtDeploy::Infer(const std::vector<cv::Mat> &img, SharedRef<TrtResults> &result) {
-        if (Config::TIMING) {
-            Util::tic();
-        }
         if (!INIT_FLAG) {
-            Init(Config::MODEL_NAME);
+            Init(m_config->MODEL_NAME);
             INIT_FLAG = true;
         }
         auto blob = createSharedRef<ImageBlob>();
         m_preprocessor->Run(img, blob);
         InferResults(blob, result);
-        if (Config::TIMING) {
-            auto timing = Util::toc();
-            if (timing > 0) {
-                m_curr_fps = 1000.0f / (float) timing;
-                std::cout << "Current FPS: " << m_curr_fps << std::endl;
-            }
-        }
 
     }
 
@@ -77,16 +68,16 @@ namespace gf {
         ai_model.read(&buf[0], mSize);
         ai_model.close();
         std::cout << "Model size: " << mSize << std::endl;
-        Config::MODEL_NAME = model_file;
+        m_config->MODEL_NAME = model_file;
         m_model_load_status = ModelLoadStatus::LOADED_SUCCESS;
         if (!m_logger) {
             m_logger = createSharedRef<Logger>();
         }
         if (!m_preprocessor) {
-            m_preprocessor = createSharedRef<Preprocessor>();
+            m_preprocessor = createSharedRef<Preprocessor>(m_config);
         }
         if (!m_postprocessor) {
-            m_postprocessor = createSharedRef<Postprocessor>();
+            m_postprocessor = createSharedRef<Postprocessor>(m_config);
         }
         if (!m_runtime) {
             m_runtime = nvinfer1::createInferRuntime(*m_logger);
@@ -97,10 +88,10 @@ namespace gf {
 		///note the target size should match the model input.
 		std::vector<int> input_size;
 		int in_size = 1;
-		int entry_num = Config::INPUT_NAME.size();
-		int out_num = Config::OUTPUT_NAMES.size();
+		int entry_num = m_config->INPUT_NAME.size();
+		int out_num = m_config->OUTPUT_NAMES.size();
 		for (int i = 0; i < entry_num; ++i) {
-			auto in_dims = m_engine->getTensorShape(Config::INPUT_NAME[i].c_str());
+			auto in_dims = m_engine->getTensorShape(m_config->INPUT_NAME[i].c_str());
 			int curr = 1;
 			for (int i = 0; i < in_dims.nbDims; ++i) {
 				curr *= in_dims.d[i];
@@ -112,11 +103,12 @@ namespace gf {
         m_output_state.resize(out_num);
         m_device_ptr.resize(entry_num+out_num);//with input pointer, thus+1.
         for (int i = 0; i < out_num; ++i) {
-            auto out_dims_i = m_engine->getTensorShape(Config::OUTPUT_NAMES[i].c_str());
+            auto out_dims_i = m_engine->getTensorShape(m_config->OUTPUT_NAMES[i].c_str());
             int out_size = 1;
             for (int j = 0; j < out_dims_i.nbDims; ++j) {
-                if(out_dims_i.d[j]>0)out_size *= out_dims_i.d[j];
+                out_size *= out_dims_i.d[j];
             }
+			if(out_size<0)out_size*=(-100);
             m_output_state[i].resize(out_size);
         }
 
@@ -151,36 +143,33 @@ namespace gf {
             return;
         }
 		for (int i = 0; i < entry_num; ++i) {
-			m_execution_context->setTensorAddress(Config::INPUT_NAME[i].c_str(),
+			m_execution_context->setTensorAddress(m_config->INPUT_NAME[i].c_str(),
 												  m_device_ptr[i]);
 		}
         for (int i = 0; i < out_num; ++i) {
-            m_execution_context->setTensorAddress(Config::OUTPUT_NAMES[i].c_str(),
+            m_execution_context->setTensorAddress(m_config->OUTPUT_NAMES[i].c_str(),
                                                   m_device_ptr[i+entry_num]);
         }
 
-        int w = Config::TARGET_SIZE[Config::TARGET_SIZE.size() - 1];
-        int h = Config::TARGET_SIZE[Config::TARGET_SIZE.size() - 2];
-		for (int i = 0; i < Config::INPUT_NAME.size(); ++i) {
+        int w = m_config->TARGET_SIZE[m_config->TARGET_SIZE.size() - 1];
+        int h = m_config->TARGET_SIZE[m_config->TARGET_SIZE.size() - 2];
+		for (int i = 0; i < m_config->INPUT_NAME.size(); ++i) {
 			auto *ptr = (float *) m_device_ptr[i];
 			if(i==0){
-				for (int k = 0; k < Config::TRIGGER_LEN; ++k) {
+				for (int k = 0; k < m_config->TRIGGER_LEN; ++k) {
 					cv::cuda::GpuMat temp(cv::Size(2,1),CV_32FC1,ptr+k*2);
-					temp.upload(Config::TARGET_SIZE);
 					m_im_shape.emplace_back(temp);
 				}
 			}else if(i==1){
-				for (int k = 0; k < Config::TRIGGER_LEN; ++k) {
+				for (int k = 0; k < m_config->TRIGGER_LEN; ++k) {
 					for (int j = 0; j < 3; ++j) {
 						m_cv_data.emplace_back(cv::Size(w, h),
 											   CV_32FC1, ptr + j * w * h + k * 3 * w * h);
 					}
 				}
 			}else if(i==2){
-				for (int k = 0; k < Config::TRIGGER_LEN; ++k) {
+				for (int k = 0; k < m_config->TRIGGER_LEN; ++k) {
 					cv::cuda::GpuMat temp(cv::Size(2,1),CV_32FC1,ptr+k*2);
-					std::vector<float> ss = {1.0f,1.0f};
-					temp.upload(ss);
 					m_scale_factor.emplace_back(temp);
 				}
 			}else{
@@ -198,10 +187,10 @@ namespace gf {
     }
 
     void TrtDeploy::Warmup(SharedRef<TrtResults> &res) {
-        cv::Mat img = cv::Mat::ones(cv::Size(Config::INPUT_SHAPE[Config::INPUT_SHAPE.size() - 1],
-                                             Config::INPUT_SHAPE[Config::INPUT_SHAPE.size() - 2]), CV_8UC3);
-        std::vector<cv::Mat> temp(Config::TRIGGER_LEN);
-        for (int i = 0; i < Config::TRIGGER_LEN; ++i) {
+        cv::Mat img = cv::Mat::ones(cv::Size(m_config->INPUT_SHAPE[m_config->INPUT_SHAPE.size() - 1],
+                                             m_config->INPUT_SHAPE[m_config->INPUT_SHAPE.size() - 2]), CV_8UC3);
+        std::vector<cv::Mat> temp(m_config->TRIGGER_LEN);
+        for (int i = 0; i < m_config->TRIGGER_LEN; ++i) {
             temp[i] = img.clone();
         }
         for (int i = 0; i < 10; i++)
@@ -214,21 +203,29 @@ namespace gf {
         for (int i = 0; i < data->m_gpu_data.size(); ++i) {
             cv::cuda::split(data->m_gpu_data[i], &m_cv_data[3 * i]);
         }
+		std::vector<float> t = {static_cast<float>(m_config->TARGET_SIZE[0]),
+								static_cast<float>(m_config->TARGET_SIZE[1])};
+		for(auto& item: m_im_shape){
+			item.upload(t);
+		}
+		std::vector<float> scale = {1.0f,1.0f};
+		for(auto& item:m_scale_factor){
+			item.upload(scale);
+		}
 
         m_execution_context->enqueueV3(m_stream);
-		int entry = Config::INPUT_NAME.size();
-        for (int i = 0; i < Config::OUTPUT_NAMES.size(); ++i) {
+		int entry = m_config->INPUT_NAME.size();
+        for (int i = 0; i < m_config->OUTPUT_NAMES.size(); ++i) {
             auto state = cudaMemcpyAsync(&m_output_state[i][0], m_device_ptr[i + entry],
                                          m_output_state[i].size() * sizeof(float),
                                          cudaMemcpyDeviceToHost, m_stream);
             if (state) {
                 std::cout << "Transmit to host failed." << std::endl;
-                std::abort();
             }
         }
         //warp the state to our res.
         int idx = 0;
-        for (auto &name: Config::OUTPUT_NAMES) {
+        for (auto &name: m_config->OUTPUT_NAMES) {
             res->Set(std::make_pair(name, m_output_state[idx++]));
         }
     }

@@ -5,7 +5,7 @@
 #include <opencv2/imgproc.hpp>
 
 
-namespace gf
+namespace smoke
 {
 
 thread_local std::chrono::high_resolution_clock::time_point Util::mTic;
@@ -82,16 +82,16 @@ void Util::plotBox(cv::Mat &img, int x0, int y0, int x1, int y1,
 				   std::vector<unsigned char>color,int thickness)
 {
 	cv::line(img,cv::Point(x0,y0),
-			 cv::Point(x1,y0),cv::Scalar(color[2],color[1],color[0]),
+			 cv::Point(x1,y0),cv::Scalar(color[0],color[1],color[2]),
 			 thickness);
 	cv::line(img,cv::Point(x0,y0),
-			 cv::Point(x0,y1),cv::Scalar(color[2],color[1],color[0]),
+			 cv::Point(x0,y1),cv::Scalar(color[0],color[1],color[2]),
 			 thickness);
 	cv::line(img,cv::Point(x0,y1),
-			 cv::Point(x1,y1),cv::Scalar(color[2],color[1],color[0]),
+			 cv::Point(x1,y1),cv::Scalar(color[0],color[1],color[2]),
 			 thickness);
 	cv::line(img,cv::Point(x1,y0),
-			 cv::Point(x1,y1),cv::Scalar(color[2],color[1],color[0]),
+			 cv::Point(x1,y1),cv::Scalar(color[0],color[1],color[2]),
 			 thickness);
 }
 }

@@ -6,7 +6,7 @@
 #include <vector>
 #include <opencv2/core/mat.hpp>
 
-namespace gf
+namespace smoke
 {
 /**
  * @brief this is used for lazy purpose.
