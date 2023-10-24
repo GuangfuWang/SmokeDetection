@@ -25,5 +25,9 @@ configure_file(
 set(DEPLOY_LIB_NAME "smoke_detection")
 set(DEPLOY_MAIN_NAME "smoke_detection_main")
 
+set(CMAKE_INSTALL_RPATH "\$ORIGIN")
+set(CMAKE_INSTALL_PREFIX "install")
+add_link_options("-Wl,--as-needed")
+
 
 
