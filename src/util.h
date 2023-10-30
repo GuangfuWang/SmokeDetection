@@ -77,7 +77,7 @@ public:
 	 */
 	static void softmax(std::vector<float>& in);
 
-	static std::vector<std::string> parseNames(const std::string& names);
+	static std::vector<std::string> parseNames(const std::string& names,char delim=' ');
 
 	static void plotBox(cv::Mat& img,int x0,int y0,int x1,int y1,
 						std::vector<unsigned char>color,int thickness);

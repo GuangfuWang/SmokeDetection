@@ -56,6 +56,7 @@ static cv::Mat genROI(const cv::Size s, const std::vector<int> &points, cv_Point
 						 sums, cv::Scalar::all(255), -1);
 		sums++;
 	}
+	return roi_img;
 }
 
 void plotLines(cv::Mat &im, const std::vector<int> &points,
@@ -78,8 +79,8 @@ cvModel *Allocate_Algorithm(cv::Mat &input_frame, int algID, int gpuID) {
 	cv::cuda::setDevice(gpuID);
 	cudaSetDevice(gpuID);
 	std::string file;
-	if(Util::checkFileExist("./infer_cfg.yaml"))
-		file = "./infer_cfg.yaml";
+	if(Util::checkFileExist("./smoke_detection.yaml"))
+		file = "./smoke_detection.yaml";
 	else if(Util::checkFileExist("../config/smoke_detection.yaml")){
 		file = "../config/smoke_detection.yaml";
 	}else{

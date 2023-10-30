@@ -62,21 +62,17 @@ void Util::softmax(std::vector<float> &in)
 		e /= total;
 	}
 }
-std::vector<std::string> Util::parseNames(const std::string &names)
+std::vector<std::string> Util::parseNames(const std::string &names,char delim)
 {
-	std::vector<std::string> ret;
-	char sep_ = ' ';
-	const std::string &temp_ = names;
-	if (temp_.find_first_of(sep_) == std::string::npos)sep_ = ',';
-	size_t curr = 0;
-	size_t lst = 0;
-	while (true) {
-		curr = temp_.find(sep_, curr);
-		ret.emplace_back(temp_.substr(lst, curr - lst));
-		if (curr == std::string::npos)break;
-		lst = curr;
+	std::stringstream ss(names);
+	std::string item;
+	std::vector<std::string> elems;
+	while (std::getline(ss, item, delim)) {
+		if (!item.empty()) {
+			elems.push_back(item);
+		}
 	}
-	return ret;
+	return elems;
 }
 void Util::plotBox(cv::Mat &img, int x0, int y0, int x1, int y1,
 				   std::vector<unsigned char>color,int thickness)
